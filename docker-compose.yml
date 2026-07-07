@@ -1,0 +1,92 @@
+﻿version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: zuri_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - zuri_pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zuri_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: zuri_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - zuri_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: zuri_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - zuri_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: zuri_frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    networks:
+      - zuri_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: zuri_nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    networks:
+      - zuri_network
+
+volumes:
+  zuri_pg_data:
+
+networks:
+  zuri_network:
+    driver: bridge
