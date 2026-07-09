@@ -1,4 +1,10 @@
-﻿from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# app/core/config.py -> app/core -> app -> backend -> raiz do projeto (onde está o .env)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+ENV_PATH = BASE_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -43,8 +49,11 @@ class Settings(BaseSettings):
     EXCHANGE_RATE_API_URL: str = "https://api.exchangerate.host"
     EXCHANGE_RATE_API_KEY: str = ""
 
+    # Currencies suportadas pela wallet
+    SUPPORTED_CURRENCIES: list[str] = ["MZN", "USD", "EUR", "BRL", "GBP", "ZAR"]
+
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(ENV_PATH),
         env_file_encoding="utf-8",
         extra="ignore",
     )
