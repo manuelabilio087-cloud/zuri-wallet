@@ -6,7 +6,15 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.middleware.rate_limit import limiter
-from app.routes import auth_routes, wallet_routes, deposit_routes, transaction_routes, profile_routes
+from app.routes import (
+    auth_routes,
+    wallet_routes,
+    deposit_routes,
+    transaction_routes,
+    profile_routes,
+    exchange_routes,
+    webhook_routes,
+)
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -44,6 +52,8 @@ app.include_router(wallet_routes.router)
 app.include_router(deposit_routes.router)
 app.include_router(transaction_routes.router)
 app.include_router(profile_routes.router)
+app.include_router(exchange_routes.router)
+app.include_router(webhook_routes.router)
 
 
 @app.get("/")

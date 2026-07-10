@@ -1,4 +1,5 @@
 import uuid
+import json
 import secrets
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -11,6 +12,7 @@ from app.models.transaction import Transaction, TransactionType, TransactionStat
 from app.repositories.deposit_repository import DepositRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.services.wallet_service import WalletService
+from app.services.payment_providers.factory import get_payment_provider
 
 
 def _generate_reference(provider: DepositProvider) -> str:
@@ -20,9 +22,10 @@ def _generate_reference(provider: DepositProvider) -> str:
 
 class DepositService:
     """
-    Depósitos entram sempre em MZN (moeda local via M-Pesa/e-Mola).
-    Nesta fase, a confirmação é simulada — em produção, isso viria de um webhook
-    do provedor (M-Pesa/e-Mola), que chamaria confirm_deposit() automaticamente.
+    Orquestra o fluxo de depósito: gera referência, delega ao adaptador do
+    provedor certo (M-Pesa/e-Mola/futuros), credita a wallet e regista tudo
+    no histórico. Não conhece detalhes de nenhuma API externa — isso vive
+    inteiramente dentro de cada adaptador (services/payment_providers/).
     """
 
     def __init__(self, db: Session):
@@ -31,18 +34,28 @@ class DepositService:
         self.transaction_repo = TransactionRepository(db)
         self.wallet_service = WalletService(db)
 
-    def create_deposit(self, user_id: uuid.UUID, provider: DepositProvider, amount: Decimal, phone: str) -> Deposit:
+    async def create_deposit(self, user_id: uuid.UUID, provider: DepositProvider, amount: Decimal, phone: str) -> Deposit:
+        reference_code = _generate_reference(provider)
+        adapter = get_payment_provider(provider)
+
+        result = await adapter.create_payment_request(amount, phone, reference_code)
+
         deposit = Deposit(
             user_id=user_id,
             provider=provider,
-            reference_code=_generate_reference(provider),
+            reference_code=reference_code,
             amount=amount,
             currency="MZN",
-            status=DepositStatus.PENDING,
+            status=DepositStatus.PENDING if result.status == "pending" else DepositStatus.FAILED,
+            provider_response=json.dumps(result.raw_response)[:1000],
         )
         return self.deposit_repo.create(deposit)
 
     def confirm_deposit(self, reference_code: str) -> Deposit:
+        """
+        Confirma um depósito manualmente (ambiente simulado) ou é chamado
+        internamente pelo webhook_service quando um callback real chega.
+        """
         deposit = self.deposit_repo.get_by_reference(reference_code)
         if deposit is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Depósito não encontrado")
@@ -50,10 +63,8 @@ class DepositService:
         if deposit.status == DepositStatus.CONFIRMED:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Depósito já confirmado")
 
-        # 1. Credita o saldo em MZN na wallet
         self.wallet_service.credit(deposit.user_id, "MZN", deposit.amount)
 
-        # 2. Registra a transação no histórico (nunca apagado)
         transaction = Transaction(
             user_id=deposit.user_id,
             type=TransactionType.DEPOSIT,
@@ -64,7 +75,6 @@ class DepositService:
         )
         transaction = self.transaction_repo.create(transaction)
 
-        # 3. Atualiza o depósito como confirmado
         deposit.status = DepositStatus.CONFIRMED
         deposit.confirmed_at = datetime.now(timezone.utc)
         deposit.transaction_id = transaction.id

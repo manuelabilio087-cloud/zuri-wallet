@@ -11,13 +11,13 @@ router = APIRouter(prefix="/api/v1/deposits", tags=["Depósitos"])
 
 
 @router.post("", response_model=DepositOut, status_code=201)
-def create_deposit(
+async def create_deposit(
     data: DepositCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     service = DepositService(db)
-    return service.create_deposit(current_user.id, data.provider, data.amount, data.phone)
+    return await service.create_deposit(current_user.id, data.provider, data.amount, data.phone)
 
 
 @router.post("/confirm", response_model=DepositOut)
