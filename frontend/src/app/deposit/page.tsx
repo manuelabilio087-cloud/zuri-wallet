@@ -93,6 +93,23 @@ export default function DepositPage() {
                 className="w-full rounded-lg border border-ocean-700 bg-ocean-800 px-3.5 py-2.5 font-mono text-sand-100 placeholder:text-sand-400 focus:border-tide-500 focus:outline-none"
                 placeholder="0.00"
               />
+              <div className="mt-2 grid grid-cols-4 gap-2">
+                {["500", "1000", "2000", "5000"].map((preset) => (
+                  <button
+                    type="button"
+                    key={preset}
+                    onClick={() => setAmount(preset)}
+                    className={clsx(
+                      "rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors",
+                      amount === preset
+                        ? "border-tide-500 bg-tide-500/10 text-tide-400"
+                        : "border-ocean-700 text-sand-400 hover:bg-ocean-800"
+                    )}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
