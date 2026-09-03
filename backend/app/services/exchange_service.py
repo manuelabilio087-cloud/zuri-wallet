@@ -68,15 +68,18 @@ class ExchangeEngine:
         self.db.commit()
 
     async def _fetch_from_api(self, base: str, quote: str) -> Decimal | None:
+        # open.er-api.com: câmbio de mercado real (mid-market), aberto e gratuito,
+        # sem chave de API — não tem relação com preços da Binance/cripto.
+        # Atualiza 1x/dia, o que é mais que suficiente para uma wallet fiat.
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(
-                    f"{settings.EXCHANGE_RATE_API_URL}/latest",
-                    params={"base": base, "symbols": quote},
-                )
+                response = await client.get(f"{settings.EXCHANGE_RATE_API_URL}/latest/{base}")
                 response.raise_for_status()
                 data = response.json()
-                return Decimal(str(data["rates"][quote]))
+                if data.get("result") != "success":
+                    return None
+                rate = data["rates"].get(quote)
+                return Decimal(str(rate)) if rate is not None else None
         except Exception:
             return None
 

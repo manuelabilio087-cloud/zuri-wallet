@@ -45,8 +45,9 @@ class Settings(BaseSettings):
     EMOLA_API_KEY: str = ""
     EMOLA_ENV: str = "sandbox"
 
-    # Exchange Rate
-    EXCHANGE_RATE_API_URL: str = "https://api.exchangerate.host"
+    # Exchange Rate — câmbio de mercado real (não é a Binance).
+    # open.er-api.com é aberto e gratuito, sem chave — atualiza 1x/dia.
+    EXCHANGE_RATE_API_URL: str = "https://open.er-api.com/v6"
     EXCHANGE_RATE_API_KEY: str = ""
 
     # Currencies suportadas pela wallet
