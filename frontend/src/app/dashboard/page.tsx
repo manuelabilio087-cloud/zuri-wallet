@@ -91,13 +91,12 @@ export default function DashboardPage() {
             >
               Depositar
             </Link>
-            <button
-              disabled
-              title="Levantamentos chegam numa próxima fase"
-              className="cursor-not-allowed rounded-lg border border-ocean-600 px-4 py-2 text-sm font-medium text-sand-400 opacity-60"
+            <Link
+              href="/withdraw"
+              className="rounded-lg border border-tide-600 px-4 py-2 text-sm font-medium text-tide-400 hover:bg-tide-500/10"
             >
               Levantar
-            </button>
+            </Link>
             <Link
               href="/history"
               className="rounded-lg border border-ocean-600 px-4 py-2 text-sm font-medium text-sand-100 hover:bg-ocean-800"

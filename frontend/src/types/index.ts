@@ -71,3 +71,18 @@ export interface TransactionListResponse {
   page_size: number;
   items: Transaction[];
 }
+
+export type WithdrawalStatus = "pending" | "processing" | "completed" | "failed";
+
+export interface Withdrawal {
+  id: string;
+  currency: Currency;
+  amount: string;
+  asset: string;
+  network: string;
+  destination_address: string;
+  status: WithdrawalStatus;
+  failure_reason: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
