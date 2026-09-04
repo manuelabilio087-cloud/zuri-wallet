@@ -63,6 +63,11 @@ export default function LoginPage() {
               placeholder="••••••••"
             />
             {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
+            <div className="mt-1.5 text-right">
+              <Link href="/forgot-password" className="text-xs text-sand-400 hover:text-tide-400">
+                Esqueceste-te da senha?
+              </Link>
+            </div>
           </div>
 
           {serverError && (

@@ -46,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(email: string, password: string) {
     const { data } = await api.post("/auth/login", { email, password });
     Cookies.set("zuri_access_token", data.tokens.access_token, { expires: 1 / 48, sameSite: "strict" });
-    Cookies.set("zuri_refresh_token", data.tokens.refresh_token, { expires: 7, sameSite: "strict" });
     setUser(data.user);
     router.push("/dashboard");
   }

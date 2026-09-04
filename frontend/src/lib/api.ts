@@ -6,6 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // necessário para o cookie httpOnly do refresh token ser enviado
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -34,14 +35,10 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = Cookies.get("zuri_refresh_token");
-      if (!refreshToken) {
-        clearSession();
-        return Promise.reject(error);
-      }
-
       try {
-        const { data } = await axios.post(`${API_URL}/auth/refresh`, { refresh_token: refreshToken });
+        // O refresh token vai no cookie httpOnly — o browser envia-o sozinho,
+        // não precisamos (nem conseguimos) de o ler aqui.
+        const { data } = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
         Cookies.set("zuri_access_token", data.access_token, { expires: 1 / 48, sameSite: "strict" });
         refreshQueue.forEach((cb) => cb());
         refreshQueue = [];
@@ -60,7 +57,7 @@ api.interceptors.response.use(
 
 export function clearSession() {
   Cookies.remove("zuri_access_token");
-  Cookies.remove("zuri_refresh_token");
+  api.post("/auth/logout").catch(() => {}); // apaga o cookie httpOnly do lado do servidor
   if (typeof window !== "undefined") {
     window.location.href = "/login";
   }
