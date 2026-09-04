@@ -53,13 +53,32 @@ class DepositService:
 
     def confirm_deposit(self, reference_code: str) -> Deposit:
         """
-        Confirma um depósito manualmente (ambiente simulado) ou é chamado
-        internamente pelo webhook_service quando um callback real chega.
+        Confirma um depósito. Chamado só internamente pelo webhook_service
+        quando um callback assinado e válido chega — nunca diretamente por
+        um utilizador (ver simulate_confirm_deposit para o caminho de dev).
         """
         deposit = self.deposit_repo.get_by_reference(reference_code)
         if deposit is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Depósito não encontrado")
 
+        return self._apply_confirmation(deposit)
+
+    def simulate_confirm_deposit(self, user_id: uuid.UUID, reference_code: str) -> Deposit:
+        """
+        Caminho de DESENVOLVIMENTO apenas — a rota que chama isto só existe
+        fora de produção (ver routes/deposit_routes.py). Confirma na mesma
+        só o dono do depósito, para não abrir a porta a confirmar depósitos
+        de outros utilizadores mesmo em ambiente de testes.
+        """
+        deposit = self.deposit_repo.get_by_reference(reference_code)
+        if deposit is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Depósito não encontrado")
+        if deposit.user_id != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Este depósito não é teu")
+
+        return self._apply_confirmation(deposit)
+
+    def _apply_confirmation(self, deposit: Deposit) -> Deposit:
         if deposit.status == DepositStatus.CONFIRMED:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Depósito já confirmado")
 

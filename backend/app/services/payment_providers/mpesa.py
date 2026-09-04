@@ -74,7 +74,10 @@ class MpesaAdapter(PaymentProviderAdapter):
 
     def verify_webhook_signature(self, payload: bytes, signature: str | None) -> bool:
         if not self.is_configured:
-            # Em ambiente simulado não há assinatura real para validar
-            return True
+            # Sem credenciais reais, não há assinatura nenhuma que possa ser válida —
+            # recusar por omissão. Testar o fluxo de depósito localmente usa o
+            # endpoint /deposits/simulate-confirm (só ativo fora de produção),
+            # não este webhook.
+            return False
         # TODO (produção): validar assinatura/HMAC conforme especificação do M-Pesa
         raise NotImplementedError("Validação de assinatura M-Pesa ainda não configurada")

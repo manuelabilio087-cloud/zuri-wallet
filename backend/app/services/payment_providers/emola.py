@@ -51,5 +51,6 @@ class EmolaAdapter(PaymentProviderAdapter):
 
     def verify_webhook_signature(self, payload: bytes, signature: str | None) -> bool:
         if not self.is_configured:
-            return True
+            # Ver comentário equivalente em mpesa.py — recusar por omissão.
+            return False
         raise NotImplementedError("Validação de assinatura e-Mola ainda não configurada")

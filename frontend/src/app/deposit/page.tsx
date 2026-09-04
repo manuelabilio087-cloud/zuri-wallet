@@ -43,7 +43,7 @@ export default function DepositPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await api.post<Deposit>("/deposits/confirm", { reference_code: deposit.reference_code });
+      await api.post<Deposit>("/deposits/simulate-confirm", { reference_code: deposit.reference_code });
       setStep("done");
     } catch (err) {
       setError(getErrorMessage(err));

@@ -9,6 +9,11 @@ from app.services.deposit_service import DepositService
 
 router = APIRouter(prefix="/api/v1/deposits", tags=["Depósitos"])
 
+# Router à parte, de propósito: dá para o main.py decidir, com uma linha,
+# se este endpoint sequer existe no ambiente atual — nunca fica disponível
+# em produção, seja qual for o estado das credenciais dos provedores.
+dev_router = APIRouter(prefix="/api/v1/deposits", tags=["Depósitos (dev)"])
+
 
 @router.post("", response_model=DepositOut, status_code=201)
 async def create_deposit(
@@ -20,16 +25,16 @@ async def create_deposit(
     return await service.create_deposit(current_user.id, data.provider, data.amount, data.phone)
 
 
-@router.post("/confirm", response_model=DepositOut)
-def confirm_deposit(
+@dev_router.post("/simulate-confirm", response_model=DepositOut)
+def simulate_confirm_deposit(
     data: DepositConfirm,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    # Nesta fase (simulada), o próprio usuário confirma via app.
-    # Em produção, isso seria um webhook do provedor M-Pesa/e-Mola, sem depender do usuário.
+    # Só existe fora de produção — ver registo condicional em main.py.
+    # Em produção, a confirmação só acontece via webhook assinado do provedor.
     service = DepositService(db)
-    return service.confirm_deposit(data.reference_code)
+    return service.simulate_confirm_deposit(current_user.id, data.reference_code)
 
 
 @router.get("", response_model=list[DepositOut])

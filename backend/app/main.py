@@ -51,6 +51,8 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 app.include_router(auth_routes.router)
 app.include_router(wallet_routes.router)
 app.include_router(deposit_routes.router)
+if settings.APP_ENV != "production":
+    app.include_router(deposit_routes.dev_router)
 app.include_router(withdrawal_routes.router)
 app.include_router(transaction_routes.router)
 app.include_router(profile_routes.router)
