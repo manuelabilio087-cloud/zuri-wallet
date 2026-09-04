@@ -10,6 +10,7 @@ from app.routes import (
     auth_routes,
     wallet_routes,
     deposit_routes,
+    withdrawal_routes,
     transaction_routes,
     profile_routes,
     exchange_routes,
@@ -20,8 +21,8 @@ app = FastAPI(
     title=settings.APP_NAME,
     description="API da Zuri Wallet - Carteira digital multimoeda",
     version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if settings.APP_ENV != "production" else None,
+    redoc_url="/redoc" if settings.APP_ENV != "production" else None,
 )
 
 app.state.limiter = limiter
@@ -50,6 +51,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 app.include_router(auth_routes.router)
 app.include_router(wallet_routes.router)
 app.include_router(deposit_routes.router)
+app.include_router(withdrawal_routes.router)
 app.include_router(transaction_routes.router)
 app.include_router(profile_routes.router)
 app.include_router(exchange_routes.router)

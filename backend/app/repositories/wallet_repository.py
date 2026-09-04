@@ -39,12 +39,27 @@ class WalletRepository:
             .first()
         )
 
+    def get_balance_locked(self, wallet_id: uuid.UUID, currency: str) -> Optional[WalletBalance]:
+        """
+        Igual a get_balance, mas com SELECT ... FOR UPDATE: bloqueia a linha até
+        ao commit/rollback desta transação. Usar sempre antes de credit()/debit()
+        para evitar duas operações concorrentes lerem o mesmo saldo "antigo"
+        (lost update) — crítico numa wallet financeira.
+        """
+        return (
+            self.db.query(WalletBalance)
+            .filter(WalletBalance.wallet_id == wallet_id, WalletBalance.currency == currency)
+            .with_for_update()
+            .first()
+        )
+
     def credit(self, wallet_id: uuid.UUID, currency: str, amount: Decimal) -> WalletBalance:
-        balance = self.get_balance(wallet_id, currency)
+        balance = self.get_balance_locked(wallet_id, currency)
         if balance is None:
             balance = WalletBalance(wallet_id=wallet_id, currency=currency, balance=Decimal("0.00"))
             self.db.add(balance)
             self.db.flush()
+            balance = self.get_balance_locked(wallet_id, currency)
 
         balance.balance = balance.balance + amount
         self.db.commit()
@@ -52,8 +67,9 @@ class WalletRepository:
         return balance
 
     def debit(self, wallet_id: uuid.UUID, currency: str, amount: Decimal) -> WalletBalance:
-        balance = self.get_balance(wallet_id, currency)
+        balance = self.get_balance_locked(wallet_id, currency)
         if balance is None or balance.balance < amount:
+            self.db.rollback()
             raise ValueError("Saldo insuficiente")
 
         balance.balance = balance.balance - amount

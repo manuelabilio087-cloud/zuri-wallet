@@ -37,3 +37,4 @@ class User(Base):
     wallet = relationship("Wallet", back_populates="user", uselist=False, cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     deposits = relationship("Deposit", back_populates="user", cascade="all, delete-orphan")
+    withdrawals = relationship("Withdrawal", back_populates="user", cascade="all, delete-orphan")

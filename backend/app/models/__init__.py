@@ -7,6 +7,7 @@ from app.models.token import Token, TokenType, Session
 from app.models.log import Log
 from app.models.exchange import ExchangeRate, ExchangeRateHistory
 from app.models.payment_callback import PaymentCallback
+from app.models.withdrawal import Withdrawal, WithdrawalStatus
 
 __all__ = [
     "User", "UserStatus",
@@ -18,4 +19,5 @@ __all__ = [
     "Log",
     "ExchangeRate", "ExchangeRateHistory",
     "PaymentCallback",
+    "Withdrawal", "WithdrawalStatus",
 ]

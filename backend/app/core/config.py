@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     EXCHANGE_RATE_API_URL: str = "https://open.er-api.com/v6"
     EXCHANGE_RATE_API_KEY: str = ""
 
+    # Binance — única via de levantamento (envio de USDT). Não tem relação
+    # nenhuma com EXCHANGE_RATE_API_URL, que é o câmbio de mercado real.
+    BINANCE_API_KEY: str = ""
+    BINANCE_API_SECRET: str = ""
+    BINANCE_DEFAULT_NETWORK: str = "BSC"
+    WITHDRAWAL_MIN_AMOUNT_USD: float = 10.0
+
     # Currencies suportadas pela wallet
     SUPPORTED_CURRENCIES: list[str] = ["MZN", "USD", "EUR", "BRL", "GBP", "ZAR"]
 

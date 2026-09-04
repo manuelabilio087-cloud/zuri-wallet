@@ -15,6 +15,11 @@ class TransactionRepository:
         self.db.refresh(transaction)
         return transaction
 
+    def update(self, transaction: Transaction) -> Transaction:
+        self.db.commit()
+        self.db.refresh(transaction)
+        return transaction
+
     def list_by_user(self, user_id: uuid.UUID, skip: int = 0, limit: int = 20) -> list[Transaction]:
         return (
             self.db.query(Transaction)
