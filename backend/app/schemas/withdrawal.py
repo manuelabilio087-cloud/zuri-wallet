@@ -14,6 +14,7 @@ class WithdrawalCreate(BaseModel):
     amount: Decimal = Field(gt=0, description="Valor a levantar, na moeda escolhida")
     destination_address: str = Field(min_length=10, max_length=200, description="Endereço/UID da tua conta Binance")
     network: str = Field(default="", validate_default=True, description="Rede de envio (ex.: BSC, TRX). Se vazio, usa a rede por omissão")
+    pin: str = Field(min_length=4, max_length=4, description="O teu PIN de levantamento de 4 dígitos")
 
     @field_validator("currency")
     @classmethod

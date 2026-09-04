@@ -20,6 +20,7 @@ export interface User {
   profile_photo_url: string | null;
   status: "active" | "blocked" | "pending_verification";
   email_verified: boolean;
+  has_transaction_pin: boolean;
   created_at: string;
   last_login_at: string | null;
 }

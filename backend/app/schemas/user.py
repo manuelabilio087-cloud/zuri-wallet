@@ -41,6 +41,20 @@ class PasswordChange(BaseModel):
     new_password: str = Field(min_length=8, max_length=100)
 
 
+class PinSet(BaseModel):
+    account_password: str
+    pin: str = Field(min_length=4, max_length=4, description="4 dígitos, ex.: 4821")
+
+    @field_validator("pin")
+    @classmethod
+    def pin_must_be_digits(cls, v: str) -> str:
+        if not v.isdigit():
+            raise ValueError("O PIN deve conter só dígitos")
+        if v in {"0000", "1234", "1111", "9999"}:
+            raise ValueError("Escolhe um PIN menos óbvio")
+        return v
+
+
 class PasswordResetRequest(BaseModel):
     email: EmailStr
 
@@ -65,6 +79,7 @@ class UserOut(BaseModel):
     profile_photo_url: Optional[str] = None
     status: str
     email_verified: bool
+    has_transaction_pin: bool = False
     created_at: datetime
     last_login_at: Optional[datetime] = None
 

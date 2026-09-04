@@ -4,19 +4,21 @@ from decimal import Decimal
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.models.user import User
 from app.models.withdrawal import Withdrawal, WithdrawalStatus
 from app.models.transaction import Transaction, TransactionType, TransactionStatus
 from app.repositories.withdrawal_repository import WithdrawalRepository
 from app.repositories.transaction_repository import TransactionRepository
+from app.services.pin_service import PinService
 from app.services.wallet_service import WalletService
 from app.services.withdraw_providers.binance import BinanceWithdrawAdapter
 
 
 class WithdrawalService:
     """
-    Orquestra o levantamento: debita a wallet (com lock, para não haver
-    double-spend), pede à Binance para enviar o valor, e se a Binance
-    recusar o pedido, devolve o saldo ao utilizador automaticamente.
+    Orquestra o levantamento: valida o PIN de transação, debita a wallet
+    (com lock, para não haver double-spend), pede à Binance para enviar o
+    valor, e se a Binance recusar o pedido, devolve o saldo automaticamente.
 
     Único provedor de saída de fundos: Binance. Não há levantamento por
     M-Pesa/e-Mola/banco nesta fase.
@@ -27,24 +29,30 @@ class WithdrawalService:
         self.withdrawal_repo = WithdrawalRepository(db)
         self.transaction_repo = TransactionRepository(db)
         self.wallet_service = WalletService(db)
+        self.pin_service = PinService(db)
         self.provider = BinanceWithdrawAdapter()
 
     async def create_withdrawal(
         self,
-        user_id: uuid.UUID,
+        user: User,
         currency: str,
         amount: Decimal,
         asset: str,
         network: str,
         destination_address: str,
+        pin: str,
     ) -> Withdrawal:
-        # 1. Debita já — se não houver saldo, wallet_service já lança HTTPException aqui.
-        self.wallet_service.debit(user_id, currency, amount)
+        # 1. PIN primeiro — antes de tocar em qualquer saldo. Levanta
+        #    HTTPException (400 errado / 423 bloqueado) e para tudo aqui.
+        self.pin_service.verify_pin(user, pin)
 
-        # 2. Regista o levantamento como PENDING antes de chamar o provedor,
+        # 2. Debita já — se não houver saldo, wallet_service já lança HTTPException aqui.
+        self.wallet_service.debit(user.id, currency, amount)
+
+        # 3. Regista o levantamento como PENDING antes de chamar o provedor,
         #    para nunca perder o rasto de dinheiro já saído da wallet.
         withdrawal = Withdrawal(
-            user_id=user_id,
+            user_id=user.id,
             currency=currency,
             amount=amount,
             asset=asset,
@@ -55,7 +63,7 @@ class WithdrawalService:
         withdrawal = self.withdrawal_repo.create(withdrawal)
 
         transaction = Transaction(
-            user_id=user_id,
+            user_id=user.id,
             type=TransactionType.WITHDRAWAL,
             currency=currency,
             amount=amount,
@@ -66,7 +74,7 @@ class WithdrawalService:
         withdrawal.transaction_id = transaction.id
         self.withdrawal_repo.update(withdrawal)
 
-        # 3. Chama a Binance. Se falhar por qualquer razão, reembolsa de imediato.
+        # 4. Chama a Binance. Se falhar por qualquer razão, reembolsa de imediato.
         try:
             result = await self.provider.send_withdrawal(
                 amount=amount,

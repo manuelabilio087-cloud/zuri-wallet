@@ -23,12 +23,13 @@ async def create_withdrawal(
 ):
     service = WithdrawalService(db)
     return await service.create_withdrawal(
-        user_id=current_user.id,
+        user=current_user,
         currency=data.currency,
         amount=data.amount,
         asset="USDT",
         network=data.network,
         destination_address=data.destination_address,
+        pin=data.pin,
     )
 
 
