@@ -20,6 +20,9 @@ npm-debug.log*
 # Docker
 *.log
 
+# Certificados TLS (gerados localmente por scripts/generate-dev-cert.sh)
+nginx/certs/
+
 # OS
 .DS_Store
 Thumbs.db

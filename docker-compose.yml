@@ -13,8 +13,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - zuri_pg_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Sem "ports" propositadamente: só acessível dentro da zuri_network.
+    # Para ligar com um cliente local (ex. psql/DBeaver), usa
+    # `docker compose exec db psql -U ...` ou um túnel temporário.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -27,8 +28,7 @@ services:
     image: redis:7-alpine
     container_name: zuri_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # Sem "ports" propositadamente — só acessível dentro da zuri_network.
     networks:
       - zuri_network
 
@@ -79,13 +79,17 @@ services:
       - frontend
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - certbot_webroot:/var/www/certbot:ro
     ports:
       - "80:80"
+      - "443:443"
     networks:
       - zuri_network
 
 volumes:
   zuri_pg_data:
+  certbot_webroot:
 
 networks:
   zuri_network:

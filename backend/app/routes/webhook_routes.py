@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from app.core.database import get_db
+from app.middleware.rate_limit import limiter
 from app.models.deposit import DepositProvider
 from app.services.webhook_service import WebhookService
 
@@ -10,6 +11,7 @@ router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 
 
 @router.post("/mpesa")
+@limiter.limit("30/minute")
 async def mpesa_webhook(
     request: Request,
     db: Session = Depends(get_db),
@@ -41,6 +43,7 @@ async def mpesa_webhook(
 
 
 @router.post("/emola")
+@limiter.limit("30/minute")
 async def emola_webhook(
     request: Request,
     db: Session = Depends(get_db),

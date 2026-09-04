@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
+from app.middleware.rate_limit import limiter
 from app.models.user import User
 from app.schemas.deposit import DepositCreate, DepositConfirm, DepositOut
 from app.services.deposit_service import DepositService
@@ -26,7 +27,9 @@ async def create_deposit(
 
 
 @dev_router.post("/simulate-confirm", response_model=DepositOut)
+@limiter.limit("10/minute")
 def simulate_confirm_deposit(
+    request: Request,
     data: DepositConfirm,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
